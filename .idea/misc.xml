@@ -7,8 +7,9 @@
         <entry key="..\:/Android_apps/PhysicalActivityRecommender/app/src/main/res/drawable/ic_gender.xml" value="0.26614583333333336" />
         <entry key="..\:/Android_apps/PhysicalActivityRecommender/app/src/main/res/drawable/round_style.xml" value="0.140625" />
         <entry key="..\:/Android_apps/PhysicalActivityRecommender/app/src/main/res/layout/activity_main.xml" value="0.264" />
-        <entry key="..\:/Android_apps/PhysicalActivityRecommender/app/src/main/res/layout/activity_recommender.xml" value="0.128125" />
+        <entry key="..\:/Android_apps/PhysicalActivityRecommender/app/src/main/res/layout/activity_recommender.xml" value="0.264" />
         <entry key="..\:/Android_apps/PhysicalActivityRecommender/app/src/main/res/layout/activity_register.xml" value="0.24375" />
+        <entry key="..\:/Android_apps/PhysicalActivityRecommender/app/src/main/res/layout/activity_step_count.xml" value="0.2" />
         <entry key="..\:/Android_apps/PhysicalActivityRecommender/app/src/main/res/layout/activity_user_details.xml" value="0.6" />
       </map>
     </option>

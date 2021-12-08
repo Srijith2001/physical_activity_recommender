@@ -48,4 +48,4 @@ def get_activity_plan(cluster,day,target):
     return f.getvalue()
 
 def ret_act_plan():
-    return  activity_plan
+    return activity_plan
