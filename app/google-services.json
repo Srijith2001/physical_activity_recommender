@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "85159893945",
+    "firebase_url": "https://physical-activity-recommender-default-rtdb.firebaseio.com",
     "project_id": "physical-activity-recommender",
     "storage_bucket": "physical-activity-recommender.appspot.com"
   },
@@ -14,7 +15,7 @@
       },
       "oauth_client": [
         {
-          "client_id": "85159893945-gui160chj154s0cp77f225uoac6j95tr.apps.googleusercontent.com",
+          "client_id": "85159893945-0t6uqn53j566q57fgvkaa72i3ofcdb6v.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.recommender.physicalActivity",
