@@ -81,7 +81,7 @@ public class Login extends AppCompatActivity implements  View.OnClickListener {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if (task.isSuccessful()){
-                            startActivity(new Intent(Login.this,RecommenderActivity.class));
+                            startActivity(new Intent(Login.this,UserDetails.class));
                         }
                         else {
                             Toast.makeText(getApplicationContext(),"Incorrect Email/Password", Toast.LENGTH_SHORT).show();
@@ -145,7 +145,7 @@ public class Login extends AppCompatActivity implements  View.OnClickListener {
         if (signedIn != null) {
             // sigin is successful
             signInButton.setVisibility(View.GONE);
-            startActivity(new Intent(Login.this, Register.class));
+            startActivity(new Intent(Login.this, UserDetails.class));
         } else {
             // sigin is cancelled
             signInButton.setVisibility(View.VISIBLE);
