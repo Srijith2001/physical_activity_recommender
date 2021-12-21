@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "85159893945",
+    "firebase_url": "https://physical-activity-recommender-default-rtdb.firebaseio.com",
+    "project_id": "physical-activity-recommender",
+    "storage_bucket": "physical-activity-recommender.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:85159893945:android:e22a8c973aa50999f03468",
+        "android_client_info": {
+          "package_name": "com.recommender.physicalActivity"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "85159893945-0t6uqn53j566q57fgvkaa72i3ofcdb6v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.recommender.physicalActivity",
+            "certificate_hash": "d084246a662b3d524f0babfd79e71d2d394dc0a1"
+          }
+        },
+        {
+          "client_id": "85159893945-k219dr7ig0n3kep09conh8mr5pauj9kr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIdvhMirgdvS0nemCcww6Z-yw3ggpQbTU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "85159893945-k219dr7ig0n3kep09conh8mr5pauj9kr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
