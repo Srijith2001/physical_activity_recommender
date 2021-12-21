@@ -49,3 +49,9 @@ def get_activity_plan(cluster,day,target):
 
 def ret_act_plan():
     return activity_plan
+
+def get_act_pattern(cluster,day):
+    filename = join(dirname(__file__), "libs/secondLevel/cluster_"+str(cluster+1)+'/'+day+'.csv')
+    df = pd.read_csv(filename)
+    largest = int(mode(df['Cluster'])[0])
+    return largest

@@ -33,6 +33,12 @@ android {
             pip {
                 install "scipy"
             }
+            pip {
+                install "sklearn"
+            }
+            pip{
+                install "pickle-mixin"
+            }
         }
     }
 
@@ -64,4 +70,5 @@ dependencies {
     implementation 'com.github.blackfizz:eazegraph:1.2.5l@aar'
     implementation 'com.nineoldandroids:library:2.4.0'
     implementation 'com.github.lecho:hellocharts-library:1.5.8@aar'
+    implementation 'org.apache.commons:commons-lang3:3.9'
 }

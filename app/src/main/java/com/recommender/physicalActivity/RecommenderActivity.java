@@ -1,13 +1,6 @@
 package com.recommender.physicalActivity;
 
-import androidx.appcompat.app.AppCompatActivity;
-
-import com.chaquo.python.PyException;
-import com.chaquo.python.PyObject;
-import com.chaquo.python.Python;
-import com.chaquo.python.android.AndroidPlatform;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.mikhaellopez.circularprogressbar.CircularProgressBar;
+import static androidx.constraintlayout.helper.widget.MotionEffect.TAG;
 
 import android.content.Context;
 import android.content.Intent;
@@ -21,28 +14,36 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.Pair;
-import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.eazegraph.lib.charts.BarChart;
-import org.eazegraph.lib.models.BarModel;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.text.SimpleDateFormat;
+import com.chaquo.python.PyObject;
+import com.chaquo.python.Python;
+import com.chaquo.python.android.AndroidPlatform;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.mikhaellopez.circularprogressbar.CircularProgressBar;
+
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import lecho.lib.hellocharts.listener.ComboLineColumnChartOnValueSelectListener;
 import lecho.lib.hellocharts.model.Axis;
 import lecho.lib.hellocharts.model.Column;
 import lecho.lib.hellocharts.model.ColumnChartData;
@@ -53,12 +54,12 @@ import lecho.lib.hellocharts.model.PointValue;
 import lecho.lib.hellocharts.model.SubcolumnValue;
 import lecho.lib.hellocharts.util.ChartUtils;
 import lecho.lib.hellocharts.view.ComboLineColumnChartView;
-import lecho.lib.hellocharts.listener.ComboLineColumnChartOnValueSelectListener;
 
 public class RecommenderActivity extends AppCompatActivity implements SensorEventListener {
 
     Python py;
     PyObject module;
+    PyObject pmodule;
 
     ImageView img;
     private SensorManager sensorManager;
@@ -72,6 +73,8 @@ public class RecommenderActivity extends AppCompatActivity implements SensorEven
     private TextView hr_target;
     private CircularProgressBar hr_progress_circular;
     private CircularProgressBar tv_progress_circular;
+    private Float[] act_plan = new Float[24];
+    private int flag =1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -91,17 +94,24 @@ public class RecommenderActivity extends AppCompatActivity implements SensorEven
         String g = intent.getStringExtra("gender");
         int goal = Integer.parseInt(intent.getStringExtra("goal"));
         String id = intent.getStringExtra("id");
+        int gender;
+        if(g.equals("Male") || g.equals("M") || g.equals("m"))
+              gender = 1;
+        else
+            gender=0;
+        float bmi = w/(h*h);
+        double[] features = {gender,h,w,bmi};
+        int cluster = RandomForestClassifier.predict(features);
 
-//        InputStream is = getResources().openRawResource(R.raw.steps.1001);
         if (!Python.isStarted()) {
             Python.start(new AndroidPlatform(this));
         }
         py = Python.getInstance();
         module = py.getModule("get_activity_plan");
+        pmodule = py.getModule("predictive_model");
         FirebaseFirestore db = FirebaseFirestore.getInstance();
 
         try {
-            //Get Current date
             Calendar calendar = Calendar.getInstance();
             String currDay;
             switch (calendar.get(Calendar.DAY_OF_WEEK)){
@@ -127,13 +137,18 @@ public class RecommenderActivity extends AppCompatActivity implements SensorEven
                 default: currDay = "monday"; break;
             }
 
-            byte[] bytes = module.callAttr("get_activity_plan",0,currDay,goal).toJava(byte[].class);
-            System.out.println("Python completed");
+            byte[] bytes = module.callAttr("get_activity_plan",cluster,currDay,goal).toJava(byte[].class);
             Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
 
+            act_plan  = module.callAttr("ret_act_plan").toJava(Float[].class);
+            act_plan = lqr(act_plan,calendar.get(Calendar.HOUR_OF_DAY),goal,goal);
 
-            Float[] act_plan  = module.callAttr("ret_act_plan").toJava(Float[].class);
 
+            Integer activityPatterGroup = module.callAttr("get_act_pattern",cluster,currDay).toJava(Integer.class);
+            System.out.println("Python completed");
+            if(pmodule.callAttr("trainModel",activityPatterGroup,cluster, StringUtils.capitalize(currDay)).toJava(Boolean.class))
+                System.out.println("Training done");
+            updateUI(act_plan, currDay);
 
             Timer timer = new Timer ();
             TimerTask hourlyTask = new TimerTask () {
@@ -142,74 +157,113 @@ public class RecommenderActivity extends AppCompatActivity implements SensorEven
                     runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
-//                            BarChart barChart = findViewById(R.id.bargraph);
-//                            barChart.clearChart();
-//                            for (int i=4;i<22;i++) {
-//                                BarModel bm = new BarModel(String.valueOf(i), act_plan[i].intValue(),0xFF123456);
-//                                barChart.addBar(bm);
-//                            }
-//                            barChart.startAnimation();
-
-
-                            ComboLineColumnChartView chartView = findViewById(R.id.chart);
-                            chartView.setOnValueTouchListener(new ValueTouchListener());
-
-                            List<Column> columns = new ArrayList<>();
-                            for (int i=4;i<22;i++) {
-                                List<SubcolumnValue> values = new ArrayList<SubcolumnValue>();
-                                values.add(new SubcolumnValue(act_plan[i].intValue(),Color.parseColor("#123456")));
-                                columns.add(new Column(values));
-                            }
-                            ColumnChartData columnChartData = new ColumnChartData(columns);
-
-                            List<Line> lines = new ArrayList<Line>();
-                            List<PointValue> values_line = new ArrayList<PointValue>();
-                            for (int i = 4; i <22; ++i) {
-                                values_line.add(new PointValue(i-4,act_plan[i].intValue()));
-
-                                Line line = new Line(values_line);
-                                line.setColor(ChartUtils.COLOR_GREEN);
-                                line.setCubic(true);
-                                line.setHasPoints(true);
-                                lines.add(line);
+                            if(calendar.get(Calendar.HOUR_OF_DAY)==0){
+                                pmodule.callAttr("trainModel",activityPatterGroup,cluster,currDay);
+                                final boolean[] flag = {false};
+                                final Float[] plan = new Float[24];
+                                // Get previous weeks activity pattern if available
+                                db.collection("users").document(id).collection("Steps")
+                                        .get()
+                                        .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                                            @Override
+                                            public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                                                if (task.isSuccessful()) {
+                                                    for (QueryDocumentSnapshot document : task.getResult()) {
+                                                        if(document.getId()==currDay){
+                                                            for(int i=0;i<24;i++) {
+                                                                plan[i]=Float.parseFloat(document.getString(((String.valueOf(i)))));
+                                                            }
+                                                            flag[0] =true;
+                                                        }
+                                                    }
+                                                } else {
+                                                    flag[0] =false;
+                                                }
+                                            }
+                                        });
+                                if(flag[0]){
+                                    act_plan  = plan;
+                                }
                             }
 
-                            LineChartData lineChartData = new LineChartData(lines);
-
-                            ComboLineColumnChartData data = new ComboLineColumnChartData(columnChartData,lineChartData);
-                            data.setAxisXBottom(null);
-                            data.setAxisYLeft(null);
-
-                            Axis axisX = new Axis();
-                            Axis axisY = new Axis().setHasLines(true);
-                            data.setAxisXBottom(axisX);
-                            data.setAxisYLeft(axisY);
-                            chartView.setComboLineColumnChartData(data);
-
-                            // Stuff that updates the UI
-                            System.out.println(currDay);
-                            int currTime = calendar.get(Calendar.HOUR_OF_DAY);
-
-                            hr_target = findViewById(R.id.hr_totalMax);
-                            hr_target.setText(String.valueOf(act_plan[currTime].intValue()));
-
-                            tv_target = findViewById(R.id.tv_totalMax);
-                            tv_target.setText("10000");
-
-                            System.out.println("done");
-                            resetSteps(currTime,currDay,id);
+                            if(flag!=1) {
+                                int currTime = calendar.get(Calendar.HOUR_OF_DAY);
+                                int curr_steps = resetSteps(currTime, currDay, id);
+                                int step_diff = (int) (act_plan[currTime - 1] - curr_steps);
+                                int hour_target_ach;
+                                if(curr_steps>=act_plan[currTime - 1].intValue())
+                                    hour_target_ach = 1;
+                                else hour_target_ach=0;
+                                if (pmodule.callAttr("willTargetAchieve", currTime, curr_steps, act_plan[currTime - 1].intValue(),hour_target_ach, goal, cluster, activityPatterGroup).toJava(Integer.class) == 0)
+                                    act_plan = lqr(act_plan, currTime, step_diff, goal);
+                                updateUI(act_plan, currDay);
+                                flag=0;
+                            }
                         }
                     });
                 }
             };
 
             // schedule the task to run starting now and then every hour...
-            timer.schedule (hourlyTask, 0l, 1000*30);
+            timer.schedule (hourlyTask, 0l, 1000*180);
         }
         catch(Exception e) {
             Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
             System.out.println(e.getMessage());
         }
+    }
+
+    private void updateUI(Float[] act_plan, String currDay){
+
+        Calendar calendar = Calendar.getInstance();
+
+        ComboLineColumnChartView chartView = findViewById(R.id.chart);
+        chartView.setOnValueTouchListener(new ValueTouchListener());
+
+        ComboLineColumnChartData data = getPlot(act_plan);
+        chartView.setComboLineColumnChartData(data);
+
+        System.out.println(currDay);
+        int currTime = calendar.get(Calendar.HOUR_OF_DAY);
+
+        hr_target = findViewById(R.id.hr_totalMax);
+        hr_target.setText(String.valueOf(act_plan[currTime].intValue()));
+
+        tv_target = findViewById(R.id.tv_totalMax);
+        tv_target.setText("10000");
+        System.out.println("ui updated");
+    }
+    private ComboLineColumnChartData getPlot(Float[] act_plan){
+        List<Column> columns = new ArrayList<>();
+        for (int i=4;i<22;i++) {
+            List<SubcolumnValue> values = new ArrayList<SubcolumnValue>();
+            values.add(new SubcolumnValue(act_plan[i].intValue(),Color.parseColor("#123456")));
+            columns.add(new Column(values));
+        }
+        ColumnChartData columnChartData = new ColumnChartData(columns);
+
+        List<Line> lines = new ArrayList<Line>();
+        List<PointValue> values_line = new ArrayList<PointValue>();
+        for (int i = 4; i <22; ++i) {
+            values_line.add(new PointValue(i-4,act_plan[i].intValue()));
+
+            Line line = new Line(values_line);
+            line.setColor(ChartUtils.COLOR_GREEN);
+            line.setCubic(true);
+            lines.add(line);
+        }
+
+        LineChartData lineChartData = new LineChartData(lines);
+
+        ComboLineColumnChartData data = new ComboLineColumnChartData(columnChartData,lineChartData);
+        data.setAxisXBottom(null);
+        data.setAxisYLeft(null);
+
+        Axis axisX = new Axis();
+        Axis axisY = new Axis().setHasLines(true);
+        data.setAxisXBottom(axisX);
+        data.setAxisYLeft(axisY);
+        return data;
     }
 
     @Override
@@ -248,11 +302,12 @@ public class RecommenderActivity extends AppCompatActivity implements SensorEven
         }
     }
 
-    public void resetSteps(int currHr, String currDay, String id) {
+    public int resetSteps(int currHr, String currDay, String id) {
         previousTotalSteps = totalSteps;
         tv_stepTaken = findViewById(R.id.tv_stepsTaken);
         tv_stepTaken.setText("0");
         saveData(currHr,currDay,id);
+        return (int) previousTotalSteps;
     }
 
     public void saveData(int currHr, String currDay, String id)
@@ -275,6 +330,12 @@ public class RecommenderActivity extends AppCompatActivity implements SensorEven
         previousTotalSteps = savedNumber;
     }
 
+    private Float[] lqr(Float[] act_plan,int curr_hr,int step_diff,int target){
+        for(int i=curr_hr;i<24;i++){
+            act_plan[i] = ((target+step_diff)*(act_plan[i]))/target;
+        }
+        return act_plan;
+    }
     private class ValueTouchListener implements ComboLineColumnChartOnValueSelectListener {
 
         @Override

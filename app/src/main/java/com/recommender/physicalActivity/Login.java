@@ -70,7 +70,7 @@ public class Login extends AppCompatActivity implements  View.OnClickListener {
             }
         });
 
-        //Email Password signin
+        //Email Password sign-in
         String email = findViewById(R.id.email).toString();
         String password = findViewById(R.id.password).toString();
         lgnButton = findViewById(R.id.loginBtn);
